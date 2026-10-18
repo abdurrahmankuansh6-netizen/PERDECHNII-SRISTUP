@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ПЕРДЕЦНЫЙ СРИСТУП — меню и заказ</title>
+<style>
+:root{--bg:#fff;--card:#fff;--text:#111;--muted:#555;--accent:#d90f1e;--line:#111;--head:#111;--headtext:#fff;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0b0b0b;--card:#161616;--text:#fff;--muted:#cfcfcf;--accent:#ff2a38;--line:#fff;--head:#d90f1e;--headtext:#fff}}
+:root[data-theme="dark"]{--bg:#0b0b0b;--card:#161616;--text:#fff;--muted:#cfcfcf;--accent:#ff2a38;--line:#fff;--head:#d90f1e;--headtext:#fff}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:Arial,Helvetica,sans-serif;font-size:20px}
+header{padding:36px 20px 28px;text-align:center;background:var(--head);color:var(--headtext);border-bottom:6px solid var(--accent)}
+h1{margin:0;font-size:clamp(34px,8vw,60px);letter-spacing:.04em;font-weight:900}
+header p{margin:10px 0 0;font-size:clamp(20px,4vw,26px)}
+nav{display:flex;gap:10px;overflow-x:auto;padding:16px;position:sticky;top:0;background:var(--bg);z-index:5;border-bottom:2px solid var(--line)}
+nav button{border:3px solid var(--line);background:var(--card);color:var(--text);padding:12px 22px;border-radius:30px;cursor:pointer;white-space:nowrap;font-size:20px;font-weight:700}
+nav button.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+main{max-width:860px;margin:0 auto;padding:8px 16px 140px}
+.item{display:flex;justify-content:space-between;align-items:center;gap:16px;background:var(--card);border:3px solid var(--line);border-radius:18px;padding:18px 20px;margin:14px 0}
+.item h3{margin:0 0 6px;font-size:26px}
+.item small{color:var(--muted);font-size:19px;line-height:1.35;display:block}
+.price{font-weight:900;font-size:24px;margin-top:10px;color:var(--accent)}
+.ctl{display:flex;align-items:center;gap:12px;font-size:24px;font-weight:700}
+.ctl button{width:48px;height:48px;border-radius:50%;border:3px solid var(--accent);background:transparent;color:var(--accent);font-size:28px;font-weight:700;cursor:pointer}
+.ctl button.add{width:auto;border-radius:28px;padding:0 22px;font-size:20px;background:var(--accent);color:#fff;height:50px}
+@media (max-width:560px){.item{flex-direction:column;align-items:flex-start}}
+#bar{position:fixed;left:0;right:0;bottom:0;padding:14px 16px calc(14px + env(safe-area-inset-bottom,0px));background:var(--bg);border-top:3px solid var(--line);display:none;justify-content:center}
+#bar button{width:100%;max-width:828px;padding:18px;border:0;border-radius:16px;background:var(--accent);color:#fff;font-size:24px;font-weight:800;cursor:pointer}
+#modal{position:fixed;inset:0;background:rgba(0,0,0,.65);display:none;align-items:flex-end;justify-content:center;z-index:10}
+#modal .box{background:var(--bg);color:var(--text);width:100%;max-width:640px;max-height:92%;overflow:auto;border-radius:24px 24px 0 0;padding:24px;border-top:6px solid var(--accent)}
+.row{display:flex;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:2px solid var(--line);font-size:22px}
+input,textarea{width:100%;margin:8px 0;padding:16px;border:3px solid var(--line);border-radius:12px;background:var(--card);color:var(--text);font-size:21px;font-family:inherit}
+.total{font-weight:900;font-size:28px;margin:16px 0;color:var(--accent)}
+.sec{border:0;background:none;color:var(--text);width:100%;padding:14px;cursor:pointer;font-size:20px;font-weight:700}
+.sec.main{background:var(--accent);color:#fff;border-radius:14px;font-size:24px}
+#done{display:none;text-align:center;padding:24px 0;font-size:22px}
+h2{font-size:32px;margin:0 0 12px}
+</style>
+</head>
+<body>
+<header>
+<h1>ПЕРДЕЦНЫЙ СРИСТУП</h1>
+<p>Выберите блюда и оформите заказ онлайн</p>
+</header>
+<nav id="tabs"></nav>
+<main id="list"></main>
+<div id="bar"><button id="open"></button></div>
+<div id="modal"><div class="box">
+<div id="form">
+<h2>Ваш заказ</h2>
+<div id="lines"></div>
+<div class="total" id="total"></div>
+<input id="nm" placeholder="Имя">
+<input id="ph" type="tel" placeholder="Телефон">
+<input id="ad" placeholder="Адрес доставки (или «самовывоз»)">
+<textarea id="cm" rows="2" placeholder="Комментарий"></textarea>
+<button class="sec main" id="send">Отправить заказ</button>
+<button class="sec" id="close">Назад к меню</button>
+</div>
+<div id="done"><h2>Спасибо!</h2><p>Заказ принят. Мы скоро свяжемся с вами.</p><button class="sec" id="fin">Закрыть</button></div>
+</div></div>
+<script>
+var MENU={
+"Завтраки":[["Омлет с сыром и зеленью",1100,"Три яйца, чеддер, свежая зелень, тост"],["Сырники со сметаной",1250,"Творожные сырники, сметана, ягодный соус"],["Овсяная каша с ягодами",950,"На молоке, мёд, свежие ягоды"],["Яйца бенедикт",1650,"Бекон, пашот, голландский соус, булочка бриошь"],["Круассан с ветчиной и сыром",1050,"Тёплый круассан, ветчина, моцарелла"]],
+"Закуски":[["Брускетта с томатами",950,"Хрустящий хлеб, томаты, базилик, оливковое масло"],["Сырная тарелка",2490,"Три вида сыра, мёд, орехи, виноград"],["Куриные крылья BBQ",1790,"Острый соус барбекю, сельдерей"],["Картофель фри с соусом",890,"Хрустящий картофель, сырный соус на выбор"],["Мясная нарезка",2990,"Ассорти из вяленых и копчёных деликатесов"],["Креветки в чесноке",2650,"Тигровые креветки, чеснок, белое вино, багет"]],
+"Салаты и супы":[["Салат цезарь с курицей",1590,"Романо, пармезан, гренки, соус цезарь"],["Греческий салат",1390,"Огурцы, томаты, фета, маслины"],["Салат с тунцом",1750,"Микс салата, тунец, яйцо, каперсы"],["Борщ со сметаной",1290,"Говядина, свёкла, чесночная пампушка"],["Крем-суп грибной",1190,"Шампиньоны, сливки, гренки"],["Том ям с креветками",2190,"Острый, кокосовое молоко, рис"]],
+"Горячее":[["Стейк рибай",5900,"Мраморная говядина, овощи гриль, перечный соус"],["Лосось на гриле",3490,"Овощи гриль, лимонное масло"],["Бефстроганов",2490,"Говядина в сливочном соусе, картофельное пюре"],["Куриная грудка с грибами",2190,"Сливочно-грибной соус, рис"],["Плов по-домашнему",1890,"Баранина, морковь, чеснок, зира"],["Бешбармак",2790,"Конина, лапша, лук-сорпа"],["Манты с мясом",1690,"Пять штук, сметана"]],
+"Паста и пицца":[["Паста карбонара",2090,"Бекон, желток, пармезан"],["Паста болоньезе",1990,"Мясной соус, пармезан"],["Паста с морепродуктами",2790,"Креветки, мидии, кальмары, томатный соус"],["Пицца Маргарита",2190,"Томаты, моцарелла, базилик"],["Пицца Пепперони",2590,"Пепперони, моцарелла, томатный соус"],["Пицца Четыре сыра",2690,"Моцарелла, горгонзола, пармезан, чеддер"]],
+"Бургеры":[["Бургер классический",1990,"Говяжья котлета, чеддер, салат, фри"],["Чизбургер двойной",2490,"Две котлеты, двойной сыр, соус"],["Бургер с курицей",1790,"Хрустящая курица, салат, соус"],["Острый бургер халапеньо",2190,"Говядина, халапеньо, острый соус, фри"]],
+"Десерты":[["Чизкейк Нью-Йорк",1290,"С ягодным соусом"],["Тирамису",1350,"Классический рецепт"],["Медовик",1090,"Нежные коржи, сметанный крем"],["Шоколадный фондан",1490,"Тёплый, с шариком мороженого"],["Мороженое три шарика",990,"Ваниль, шоколад, клубника"],["Блинчики с вареньем",1050,"Три блинчика, варенье или сгущёнка"]],
+"Кофе и чай":[["Эспрессо",650,"Двойная порция"],["Американо",750,"Чёрный кофе"],["Капучино",950,"Эспрессо и молочная пена"],["Латте",1050,"Нежный молочный кофе"],["Раф ванильный",1250,"Сливки, ванильный сироп"],["Чай чёрный в чайнике",850,"Классический, с лимоном"],["Чай зелёный в чайнике",850,"Жасминовый"],["Чай с облепихой",1150,"Облепиха, мёд, имбирь"],["Горячий шоколад",1100,"Густой, со взбитыми сливками"]],
+"Холодные напитки":[["Домашний лимонад",1250,"Лимон, мята, содовая"],["Морс ягодный",990,"Клюква, смородина"],["Свежевыжатый апельсин",1650,"Сок из свежих апельсинов"],["Айс латте",1250,"Холодный кофе с молоком и льдом"],["Молочный коктейль",1350,"Ваниль, шоколад или клубника"],["Кола, 0.33 л",650,"Классическая"],["Минеральная вода, 0.5 л",450,"Газированная или негазированная"],["Компот домашний",750,"Сухофрукты"]]
+};
+var cart={},cat=Object.keys(MENU)[0];
+function fmt(n){return n.toLocaleString("ru-RU")+" ₸"}
+function key(c,i){return c+"|"+i}
+function render(){
+var t=document.getElementById("tabs");t.innerHTML="";
+Object.keys(MENU).forEach(function(c){var b=document.createElement("button");b.textContent=c;if(c===cat)b.className="on";b.onclick=function(){cat=c;render();window.scrollTo(0,0)};t.appendChild(b)});
+var l=document.getElementById("list");l.innerHTML="";
+MENU[cat].forEach(function(it,i){
+var k=key(cat,i),q=cart[k]||0,d=document.createElement("div");d.className="item";
+d.innerHTML='<div><h3>'+it[0]+'</h3><small>'+it[2]+'</small><div class="price">'+fmt(it[1])+'</div></div><div class="ctl"></div>';
+var c=d.querySelector(".ctl");
+if(!q){var a=document.createElement("button");a.className="add";a.textContent="В корзину";a.onclick=function(){cart[k]=1;render()};c.appendChild(a)}
+else{var m=document.createElement("button");m.textContent="−";m.onclick=function(){cart[k]--;if(!cart[k])delete cart[k];render()};var s=document.createElement("span");s.textContent=q;var p=document.createElement("button");p.textContent="+";p.onclick=function(){cart[k]++;render()};c.append(m,s,p)}
+l.appendChild(d)});
+var n=0,sum=0;Object.keys(cart).forEach(function(k){var p=k.split("|"),it=MENU[p[0]][p[1]];n+=cart[k];sum+=cart[k]*it[1]});
+var bar=document.getElementById("bar");bar.style.display=n?"flex":"none";
+document.getElementById("open").textContent="Корзина · "+n+" · "+fmt(sum);
+window._sum=sum}
+document.getElementById("open").onclick=function(){
+var h="";Object.keys(cart).forEach(function(k){var p=k.split("|"),it=MENU[p[0]][p[1]];h+='<div class="row"><span>'+it[0]+' × '+cart[k]+'</span><span>'+fmt(it[1]*cart[k])+'</span></div>'});
+document.getElementById("lines").innerHTML=h;
+document.getElementById("total").textContent="Итого: "+fmt(window._sum);
+document.getElementById("form").style.display="block";document.getElementById("done").style.display="none";
+document.getElementById("modal").style.display="flex"};
+document.getElementById("close").onclick=function(){document.getElementById("modal").style.display="none"};
+document.getElementById("send").onclick=function(){
+if(!document.getElementById("nm").value||!document.getElementById("ph").value){alert("Укажите имя и телефон");return}
+cart={};render();document.getElementById("form").style.display="none";document.getElementById("done").style.display="block"};
+document.getElementById("fin").onclick=function(){document.getElementById("modal").style.display="none"};
+render();
+</script>
+</body>
+</html>
